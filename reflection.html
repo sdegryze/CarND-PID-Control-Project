@@ -132,10 +132,10 @@ $(document).ready(function () {
 <div id="describe-how-the-final-hyperparameters-were-chosen." class="section level1">
 <h1>Describe how the final hyperparameters were chosen.</h1>
 <ul>
-<li>I started out with a manual tuning of the PID coefficients for the steering angle, with a constant throttle of 0.3. I started with just a P controller and increased the value of Kp until I observed oscillations in the steering angle. Subsequently, I increased the value of Kd until the oscillations were dampened. Finally, I included a small value of Ki (0.0001).</li>
-<li>Next, I ran a twiddle optimization for the steering angle with the manually tuned PID coefficients as initial guesses.</li>
-<li>Next, I switched on the PD controller for the throttle. I manually tuned the values for Kp and Kd for the throttle. I first increased the Kp coefficient until the speed increased and decreased appropriately in the path (somewhere between 30 and 60 mph), I then increased the Kd coefficient to reduce the throttle oscillations and get a smoother change in speed and no excessive breaking</li>
-<li>Finally, I ran a twiddle optimization again, but now with the throttle PD controller on. I started off the twiddle optimization with the optimal PID coefficients I got with a constant throttle.</li>
+<li>I started out with a manual tuning of the PID coefficients for the steering angle, with a constant throttle of 0.3. I started with just a P controller and increased the value of Kp until I observed oscillations in the steering angle. Subsequently, I increased the value of Kd until the oscillations were dampened. Finally, I included a small value of Ki (0.0001). This gave me an MSE of around 0.35.</li>
+<li>Next, I ran a twiddle optimization for the steering angle with the manually tuned PID coefficients from the previous step as initial guesses. The throttle was still held constant to 0.3. I started out with step sizes that were about 1/10th of the manual guesses. This reduced the MSE to around 0.15</li>
+<li>Next, I switched on the PD controller for the throttle. I manually tuned the values for Kp and Kd for the throttle. I first increased the Kp coefficient until the speed increased and decreased appropriately in the path (somewhere between 30 and 60 mph), I then increased the Kd coefficient to reduce the throttle oscillations and get a smoother change in speed and no excessive breaking. This step yielded in much higher speeds, but the MSE increased again somewhat to 0.25.</li>
+<li>Finally, I ran a twiddle optimization again, but now with the throttle PD controller on. I started off the twiddle optimization with the optimal PID coefficients I got with a constant throttle. This reduced to MSE to about 0.20.</li>
 </ul>
 </div>
 

@@ -8,7 +8,7 @@ For the steering angle:
 
 For the throttle, I implemented a PD controller in such a way that the speed is inversely proportional to the cross-track error. In other words, if the car is far away from the desired position (e.g., in sharp curves), the car will slow down. Analogously, if the car is close to the desired position, the car will speed down. The P component of speed represents, again, the reactivity. The D component dampens the reactivity and makes the changes in throttle less abrupt.
 
-#Describe how the final hyperparameters were chosen.
+# Describe how the final hyperparameters were chosen.
 
 * I started out with a manual tuning of the PID coefficients for the steering angle, with a constant throttle of 0.3. I started with just a P controller and increased the value of Kp until I observed oscillations in the steering angle. Subsequently, I increased the value of Kd until the oscillations were dampened. Finally, I included a small value of Ki (0.0001). This gave me an MSE of around 0.35.
 * Next, I ran a twiddle optimization for the steering angle with the manually tuned PID coefficients from the previous step as initial guesses. The throttle was still held constant to 0.3. I started out with step sizes that were about 1/10th of the manual guesses.  This reduced the MSE to around 0.15
