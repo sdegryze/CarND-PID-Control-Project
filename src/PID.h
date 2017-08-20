@@ -9,6 +9,9 @@ public:
   double p_error;
   double i_error;
   double d_error;
+  double prev_cte;
+  double squared_error;
+  long n;
 
   /*
   * Coefficients
@@ -36,6 +39,11 @@ public:
   * Update the PID error variables given cross track error.
   */
   void UpdateError(double cte);
+  
+  /*
+   * Calculates the mean squared cross-track error;
+   */
+  double MeanSquaredError();
 
   /*
   * Calculate the total PID error.
