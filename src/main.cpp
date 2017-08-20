@@ -33,15 +33,28 @@ int main()
 {
   uWS::Hub h;
   
-  bool run_twiddle = true;
+  // set to true if you want to optimize the PID coefficients using twiddle
+  // if set to false, the initial values specified below will be used as (constant) PID coefficients
+  bool run_twiddle = false;
 
-  PID pid;
+  // a PID controller for the steering angle
+  PID steering_pid;
+  
+  // a PID controller for the throttle
+  PID throttle_pid;
+  
+  // an instance of the Twiddle object to conduct parameter optimization
   Twiddle twiddle;
-  // [0.187429, 0.000276564, 4.53307] and steps = [0.0161772, 2.56781e-05, 0.343789]
-  pid.Init(0.187429, 0.000276564, 4.53307); // Kp, Ki, Kd
-  twiddle.Init(0.187429, 0.000276564, 4.53307);
 
-  h.onMessage([&pid, &twiddle, &run_twiddle](uWS::WebSocket<uWS::SERVER> ws, char *data, size_t length, uWS::OpCode opCode) {
+  // The coefficient values for the steering angle have been tuned using twiddle
+  steering_pid.Init(0.191304, 0.000277616, 4.61365); // Kp, Ki, Kd
+  twiddle.Init(0.191304, 0.000277616, 4.61365);
+  
+  // The coefficient values for the throttle were manually tuned
+  throttle_pid.Init(0.4, 0., 2.0);
+  
+
+  h.onMessage([&steering_pid, &throttle_pid, &twiddle, &run_twiddle](uWS::WebSocket<uWS::SERVER> ws, char *data, size_t length, uWS::OpCode opCode) {
     // "42" at the start of the message means there's a websocket message event.
     // The 4 signifies a websocket message
     // The 2 signifies a websocket event
@@ -57,33 +70,33 @@ int main()
           double speed = std::stod(j[1]["speed"].get<std::string>());
           double angle = std::stod(j[1]["steering_angle"].get<std::string>());
           double steer_value;
-          /*
-          * TODO: Calcuate steering value here, remember the steering value is
-          * [-1, 1].
-          * NOTE: Feel free to play around with the throttle and speed. Maybe use
-          * another PID controller to control the speed!
-          */
-          pid.UpdateError(cte);
-          steer_value = pid.TotalError();
+          double throttle_value;
+
+          steering_pid.UpdateError(cte);
+          throttle_pid.UpdateError(fabs(cte));
           
-          // DEBUG
+          // clip steering value between -1 and 1
+          steer_value = max(min(steering_pid.TotalError(), 1.), -1.);
+          // clip throttle value between -0.3 (breaking) and 0.9
+          throttle_value = max(min(0.65 + throttle_pid.TotalError(), 0.9), -0.3);
+          
+          // uncomment for debugging:
           // std::cout << "CTE: " << cte << " Steering Value: " << steer_value << std::endl;
+          // std::cout << "CTE: " << cte << " Throttle Value: " << throttle_value << std::endl;
           
           if (run_twiddle) {
             bool reset_needed = twiddle.Step(cte);
             if (reset_needed) {
-              //std::cout << "n = " << pid.n << "; MSE = " << pid.MeanSquaredError() << std::endl;
               vector<double> coefs = twiddle.GetUpdatedCoefs();
-              pid.Init(coefs[0], coefs[1], coefs[2]);
+              steering_pid.Init(coefs[0], coefs[1], coefs[2]);
               std::string msg = "42[\"reset\",{}]";
               ws.send(msg.data(), msg.length(), uWS::OpCode::TEXT);
             }
           }
-          
 
           json msgJson;
           msgJson["steering_angle"] = steer_value;
-          msgJson["throttle"] = 0.3;
+          msgJson["throttle"] = throttle_value;
           auto msg = "42[\"steer\"," + msgJson.dump() + "]";
           // std::cout << msg << std::endl;
           ws.send(msg.data(), msg.length(), uWS::OpCode::TEXT);

@@ -11,17 +11,17 @@
 
 using namespace std;
 
-/*
- * TODO: Complete the Twiddle class.
- */
-
 void Twiddle::Init(double Kp, double Ki, double Kd) {
   coefs = {Kp, Ki, Kd};
-  steps = {Kp / 100., Ki / 100., Kd / 100.};
+  // we are initializing the step sizes to 1000th of the initial values. This assumes that the initial values are
+  // already quite good
+  steps = {Kp / 1000., Ki / 1000., Kd / 1000.};
   best_mse = -1.;
   n = 0;
   coef_idx = 0;
   squared_error = 0;
+  
+  // set to true to get extensive information about the Twiddle optimization
   verbose = true;
 }
 
@@ -31,11 +31,11 @@ Twiddle::~Twiddle() {}
 
 bool Twiddle::Step(double cte) {
   n++;
+  
+  // when we are no longer in the equilibration period, start accumulating the error
   if (n >= equilibration_period) squared_error += cte * cte;
   bool reset_needed = (n == (equilibration_period + error_period));
   if (reset_needed) {
-    
-    //coef_idx = (coef_idx + 1) % 3;
     double mse = squared_error / n;
     if (verbose) {
       cout << "Twiddle: -------------------------" << endl;
@@ -55,10 +55,12 @@ bool Twiddle::Step(double cte) {
       try_increase = true;
       
     } else if (try_increase) {
+      // first evaluate the increase of the coefficient
       if (mse < best_mse) {
         if (verbose) cout << "Twiddle: accepting increase for coef " << coef_idx << endl;
         next_coef = true;
       } else {
+        // if increasing the coefficient does not improve the error, try decreasing
         if (verbose) cout << "Twiddle: rejecting increase for coef " << coef_idx << "; trying decrease" << endl;
         coefs[coef_idx] -= 2 * steps[coef_idx];
         try_increase = false;
@@ -68,10 +70,12 @@ bool Twiddle::Step(double cte) {
         if (verbose) cout << "Twiddle: accepting decrease for coef " << coef_idx << endl;
         next_coef = true;
       } else {
+        // if decreasing the coefficient also does not improve the error, reduce the step size
         if (verbose) cout << "Twiddle: rejecting decrease for coef " << coef_idx << "; reducing step size" << endl;
         coefs[coef_idx] += steps[coef_idx];
         steps[coef_idx] *= 0.9;
       
+        // move on to the next coefficient and try an increase
         coef_idx = (coef_idx + 1) % 3;
         coefs[coef_idx] += steps[coef_idx];
         try_increase = true;
@@ -81,6 +85,7 @@ bool Twiddle::Step(double cte) {
     }
   
     if (next_coef) {
+      // move on to the next coefficient but increase the step size
       best_mse = mse;
       steps[coef_idx] *= 1.1;
       coef_idx = (coef_idx + 1) % 3;
